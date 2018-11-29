@@ -1,0 +1,65 @@
+# -*- coding: utf-8 -*-
+#Spyder Editor
+
+import os
+from sklearn.cross_validation import train_test_split
+import pandas as pd  
+import numpy as np 
+from scipy import mean
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestRegressor
+from sklearn import metrics
+
+sys.path_extend[]
+from connect_to_azure import *
+
+
+os.chdir('')
+
+dataset = pd.read_csv('')
+dataset.head()
+
+
+# Preparing data for training
+X = dataset.iloc[:, 0:4].values  
+y = dataset.iloc[:, 4].values
+
+
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0) 
+
+
+# Feature Scaling
+sc = StandardScaler()  
+X_train = sc.fit_transform(X_train)  
+X_test = sc.transform(X_test)
+
+
+
+regressor = RandomForestRegressor()  
+a = regressor.fit(X_train, y_train)  
+y_pred = regressor.predict(X_test)
+
+
+#print('Mean Absolute Error:', metrics.mean_absolute_error(y_test, y_pred))  
+#print('Mean Squared Error:', metrics.mean_squared_error(y_test, y_pred))  
+
+rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+rmse1 = rmse/mean(y_test)
+
+print('Root Mean Squared Error: ' + str(rmse1*100) + ' %' )
+
+feat_imp = regressor.feature_importances_
+
+colnames = dataset.columns
+
+print(colnames)
+
+Final_Result = pd.DataFrame()
+
+Final_Result['colnames'] = colnames[:-1]
+Final_Result['Feature Importance'] = feat_imp
+
+Final_Result.sort_values(by = 'Feature Importance', inplace = True, ascending = False)
+
+Final_Result.head()
