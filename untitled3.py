@@ -8,7 +8,7 @@ from sklearn.ensemble import RandomForestRegressor
 import matplotlib.pyplot as plt
 import matplotlib.pylab as pylab
 from scipy.stats.stats import pearsonr
-
+import seaborn as sns
 
 
 
@@ -72,21 +72,22 @@ def data_ingestion(x):
         
         ##abi rtlr volume
         global active_retailer_vol
-        active_retailer_vol = sql_execute(""" with cte1 as (SELECT rtlr_party_id,a.zip,dma_name, channel, cal_yr_mo_nbr, sales_bbls,
+        active_retailer_vol = sql_execute(""" with cte1 as (SELECT a.rtlr_party_id,c.zip,b.dma_name, c.channel, cal_yr_mo_nbr, sales_bbls,
         case 
         when cal_yr_mo_nbr > 201710 then 'present'
         when cal_yr_mo_nbr > 201610 then 'past'
         else 'Not Needed'
         end as time_frame
         FROM [zip_analytics_test].[str_sales_extract_all] a 
+        left join zip_analytics_test.rtlr_geo_lookup c
+        on a.rtlr_party_id = c.rtlr_party_id
         left join zip_analytics_test.zip_dma b 
-        on a.zip=b.zip)
+        on c.zip=b.zip)
         select rtlr_party_id, zip,dma_name, channel, sum(sales_bbls) as sales_bbls, time_frame from cte1 
-        where cal_yr_mo_nbr > 201609
+        where cal_yr_mo_nbr > 201610
         group by rtlr_party_id, zip,dma_name, channel, time_frame""")
         active_retailer_vol = active_retailer_vol.loc[active_retailer_vol['channel'].isin(off_channels),:]
         active_retailer_vol['channel'] = active_retailer_vol.channel.replace('MASS MERCH', 'GROCERY')
-    
         
         ##industry vol
         global industry_data
@@ -104,6 +105,7 @@ def demographics_cleaning(x):
     demographics_off = x
     demo_cols = list(demographics_off.columns)
     demo_cols[0] = 'rtlr_party_id'
+    demo_cols[3] = 'zip'
     demographics_off.columns = demo_cols
     demographics_off['rtlr_party_id'] = demographics_off['rtlr_party_id'].fillna(0).astype(int)
     demographics_off.drop(columns_to_be_dropped, axis = 1, inplace = True)
@@ -113,48 +115,54 @@ def str_sales_cleaning(active_retailer_vol):
     global vol_df_present, vol_df_past
     active_retailer_vol_comb = pd.pivot_table(active_retailer_vol, index = ['rtlr_party_id','zip','dma_name'], columns= 'time_frame', values='sales_bbls'  ).reset_index()
     active_retailer_vol_comb['zip'] = active_retailer_vol_comb['zip'].astype(int) 
+#    active_retailer_vol_comb['present'].fillna(0,inplace=True)
+#    active_retailer_vol_comb = active_retailer_vol_comb[active_retailer_vol_comb['present']>0]
     vol_df_present = active_retailer_vol_comb.groupby(['rtlr_party_id','zip','dma_name']).agg({'present':['sum']}).reset_index()
     vol_df_past = active_retailer_vol_comb.groupby(['rtlr_party_id','zip','dma_name']).agg({'past':['sum']}).reset_index()
     vol_df_present.columns = ['rtlr_party_id','zip','dma_name','volume']
     vol_df_past.columns = ['rtlr_party_id','zip','dma_name','volume']
     
 def segmentation (Key):
+    global occupation_off_all
+    global columns_to_select
+    global bucketed_column_df
     data_dictionary_desc = var_names[var_names['Description'].str.contains(Key)]
     columns_to_select = data_dictionary_desc['Name'].tolist()
-    bucketed_column_df = demographics_off[demographics_off.columns.intersection(columns_to_select)]   
     ###Removing column containing Income as Keyword only for Race and Ethnicity
     if Key == "Race and Ethnicity":    
           var_new = var_names[var_names['Description'].str.contains("Income Race and Ethnicity")]
           col_to_select = var_new['Name'].tolist()
-          for column in col_to_select:
-             del bucketed_column_df[column]
+          columns_to_select = list(set(columns_to_select).difference(set(col_to_select)))
+    bucketed_column_df = combined_data[columns_to_select]
     return bucketed_column_df
-
-
-
+    
 def feature_vol(combined_data, bucketed_column_df):
     global occupation_off_all
     global tot_rtlr    
     global tot_vol
-    occupation_off_all = pd.concat([combined_data[['rtlr_party_id','zip','dma_name']],bucketed_column_df, combined_data[['volume']]], axis=1)
-    occupation_off_all.fillna(0,inplace=True)
+    occupation_off_all = pd.concat([combined_data[['rtlr_party_id','zip','dma_name']],
+                                                  bucketed_column_df,combined_data['volume']],axis=1)
+    occupation_off_all.fillna(0, inplace=True)
     tot_rtlr = occupation_off_all.rtlr_party_id.count()
     tot_vol = occupation_off_all.volume.sum()
     
-    
-def dma_random_forest(i):  
+def dma_random_forest(i):
     occupation_off = occupation_off_all.loc[occupation_off_all['dma_name']==i]
     occupation_off_to_scale = occupation_off.drop(['rtlr_party_id','zip','dma_name','volume'],axis=1)
     occupation_off_scaled_array = sc.fit_transform(occupation_off_to_scale)
     X = occupation_off_scaled_array
     y = occupation_off['volume']
     regressor = RandomForestRegressor(n_jobs=30, random_state=13)  
-    model = regressor.fit(X,y)  
+    model = regressor.fit(X,y)
     dma_best_ft = pd.DataFrame()
     dma_best_ft['colnames'] = occupation_off_to_scale.columns
-    dma_best_ft['Feature Importance'] = regressor.feature_importances_
+    dma_best_ft['Feature Importance'] = model.feature_importances_
     dma_best_ft.sort_values(by = 'Feature Importance', inplace = True, ascending = False)
     dma_best_ft = dma_best_ft.merge(var_names, how = 'left', left_on ='colnames', right_on = 'Name').drop('Name',axis=1)
+    
+    for j in range(0,len(dma_best_ft)):
+            dma_best_ft['Description'][j] = str(dma_best_ft['Description'][j])[str(dma_best_ft['Description'][j]).find("%"):len(str(dma_best_ft['Description'][j]))-5]  
+    
     dma_best_ft['dma_name'],dma_best_ft['rtlr_count'],dma_best_ft['present_volume'] = i,len(occupation_off.index), y.sum()
     if (dma_best_ft['Feature Importance'][0]>mean(dma_best_ft['Feature Importance'])*2):
         return pd.DataFrame(dma_best_ft.iloc[0,:]).transpose()
@@ -183,7 +191,7 @@ def dma_list_random_forest(i):
     model = regressor.fit(X,y)
     dma_best_ft = pd.DataFrame()
     dma_best_ft['colnames'] = occupation_off_to_scale.columns
-    dma_best_ft['Cumulative Feature Importance'] = regressor.feature_importances_
+    dma_best_ft['Cumulative Feature Importance'] = model.feature_importances_
     feature_mat_cum = pd.DataFrame(dma_best_ft[dma_best_ft['colnames']==feature.colnames[list_of_dma.index(i)]])
     return feature_mat_cum
 
@@ -235,11 +243,13 @@ demographics_cleaning(demographics_raw)
 str_sales_cleaning(active_retailer_vol)
 
 ##mapping demographics to the volume
-combined_data = demographics_off.merge(vol_df_present,how='inner',on = 'rtlr_party_id')
+vol_df_present['zip'] = vol_df_present['zip'].astype(int)
+demographics_off['zip'] = demographics_off['zip'].astype(int) 
+combined_data = demographics_off.merge(vol_df_present,how='inner',on = ['rtlr_party_id','zip'])
+
 
 ##subsetting only required columns
-bucketed_column_df = pd.concat(map(segmentation,keyword_to_filter_columns), axis=1)
-
+bucketed_column_df = pd.concat(map(segmentation,keyword_to_filter_columns),axis=1)
 ##generating needed dataframes and values
 feature_vol(combined_data, bucketed_column_df)
 
@@ -269,63 +279,44 @@ feature_growth_dist = pd.concat(map(growth_dist_and_corr,feature_index), axis=0)
 
 
 
-
-
-
 feature['threshold'] = ''
 
 for i in feature.index:
-    i=11
     x= pd.DataFrame(feature.iloc[i,:]).transpose()
     feature_nm = x['colnames'][i]
     dma_list_ft = x['dma_list'][i]
     occupation_rtlr_vol = occupation_off_all_growth[['rtlr_party_id','dma_name',feature_nm,'volume', 'flag']]
     occupation_rtlr_vol = occupation_rtlr_vol.loc[occupation_rtlr_vol.dma_name.isin(dma_list_ft)]
-    optimal_rtlr_vol = occupation_rtlr_vol[(occupation_rtlr_vol['volume']>(mean(occupation_rtlr_vol['volume'])+np.std(occupation_rtlr_vol['volume'])))]
-    feature['threshold'][i] = mean(optimal_rtlr_vol[feature_nm])
+    occupation_rtlr_vol['flag'] = np.where(occupation_rtlr_vol['flag']==1,'Grew','Shrunk')
+    optimal_rtlr_vol = occupation_rtlr_vol[(occupation_rtlr_vol['volume']>(mean(occupation_rtlr_vol['volume'])))&(occupation_rtlr_vol['volume']<(mean(occupation_rtlr_vol['volume'])+2*np.std(occupation_rtlr_vol['volume'])))]
+    feature['threshold'][i] = mean(optimal_rtlr_vol[optimal_rtlr_vol[feature_nm]>0][feature_nm])
 
 
 
+
+
+    
 feature.to_csv('feature_details_new_1.csv', index=False)
 
-
-##generation of a scatter plot   
-scatter(occupation_rtlr_vol, feature_nm)
-def scatter(occupation_rtlr_vol,feature_nm):
-    plt.scatter(occupation_rtlr_vol[[feature_nm]],occupation_rtlr_vol[['volume']], cmap = 'binary')
-    plt.xlim(0,np.quantile(occupation_rtlr_vol[[feature_nm]], 0.9))
-    plt.ylim(0,6000)
-    plt.ylabel('volume')
-    plt.xlabel(feature_nm+' (%pop)')
-    plt.show
-    file_name = 'Scatterplot_'+feature_nm+'.png'
-   # pylab.savefig(file_name)
-    
-    
-    i = 11
+##scatterplots
+for i in feature.index:
     x= pd.DataFrame(feature.iloc[i,:]).transpose()
     feature_nm = x['colnames'][i]
     dma_list_ft = x['dma_list'][i]
-
     occupation_rtlr_vol = occupation_off_all_growth[['rtlr_party_id','dma_name',feature_nm,'volume', 'flag']]
     occupation_rtlr_vol = occupation_rtlr_vol.loc[occupation_rtlr_vol.dma_name.isin(dma_list_ft)]
-
-    occupation_rtlr_vol.plot(kind='hexbin', x=feature_nm, y ='volume', gridsize=10)
-    plt.xlim(0,np.quantile(occupation_rtlr_vol[[feature_nm]], 0.99))
-    plt.ylim(0,6000)
+    occupation_rtlr_vol['flag'] = np.where(occupation_rtlr_vol['flag']==1,'Grew','Shrunk')
+    optimal_rtlr_vol = occupation_rtlr_vol[(occupation_rtlr_vol['volume']>(mean(occupation_rtlr_vol['volume'])))&(occupation_rtlr_vol['volume']<(mean(occupation_rtlr_vol['volume'])+2*np.std(occupation_rtlr_vol['volume'])))]
+    feature['threshold'][i] = mean(optimal_rtlr_vol[optimal_rtlr_vol[feature_nm]>0][feature_nm])
     
-    plt.plot(feature_nm, 'volume', data=occupation_rtlr_vol, linestyle = '', alpha = 0.2, marker = 'o', markersize= 3)
-    plt.xlim(0,10)
-    plt.ylim(0,3000)
-    plt.show
-    
-    import seaborn as sns
-    sns.jointplot(occupation_rtlr_vol[[feature_nm]],occupation_rtlr_vol[['volume']], kind='scatter', height=5, color = 'deepskyblue', alpha=0.05 ,s=3 , xlim = (0,max(occupation_rtlr_vol[feature_nm])), ylim=(0,max(occupation_rtlr_vol['volume'])) )
-    plt.xlim(0,10)
-    plt.ylim(0,3000)
-    plt.show
-    
-    test= occupation_rtlr_vol
-    test['score'] = (test[feature_nm]*test['volume']).round(3)
-    test['size'] = test.groupby(['score']).score.count()
-    sns.scatterplot(x=feature_nm, y="volume", alpha=0.05, data= occupation_rtlr_vol)
+    plot = sns.scatterplot(x=feature_nm, y="volume", alpha=0.2, legend = 'brief', data= occupation_rtlr_vol)
+    plot.set(xlim = (0, max(occupation_rtlr_vol[feature_nm])), ylim = (0,max(occupation_rtlr_vol['volume'])))
+    plt.axhline(y=mean(occupation_rtlr_vol['volume']), color='red')    
+    plt.axhline(y=mean(occupation_rtlr_vol['volume'])+2*np.std(occupation_rtlr_vol['volume']), color='r')    
+    plt.axvline(x=mean(optimal_rtlr_vol[feature_nm]))    
+    plt.xlabel(feature.description[i][0])    
+    plt.ylabel("Volume (sales_bbls)")
+    plt.show()
+    test = plot.get_figure()
+    file_name = 'Scatterplot_'+feature.description[i][0]+'.png'
+    test.savefig(file_name)
