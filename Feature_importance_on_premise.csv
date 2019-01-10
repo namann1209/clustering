@@ -1,0 +1,24 @@
+,colnames,Feature Importance,Description
+0,CYA01V001,0.11566460871907536,Basic Variables Current Year Estimates A (2018) Total Population
+1,Percent_Tenure_1,0.07784827885403259,
+2,Race_and_Ethnicity_1,0.05300451148001741,
+3,Sports_Events_-_Listen_2,0.05088330759341393,
+4,XCYA10V001,0.04773724197089,Basic Variables Current Year Estimates A (2018)  By Percent Language Spoken at Home (Pop 5 Plus) % Speak only English at Home
+5,CYPOPDENS,0.04700528643975278,Basic Variables Current Year Estimates A (2018) Population Density
+6,PYCYPOPGRW,0.046953582906788825,Basic Variables Current Year Estimates A (2018) 5 Year Projected Population Growth
+7,Average_Expenditure_Alcoholic_1,0.042456024741468604,
+8,Percent_Labor_Force_1,0.04233227669673929,
+9,Business_Sector_4,0.041431407645620394,
+10,Business_Sector_1,0.041250025641558066,
+11,Sports_Events_-_Attend_1,0.04074411705951718,
+12,Business_Sector_2,0.03619846871952954,
+13,XCYB01V002,0.035339998102491874,Housing Units Current Year Estimates A (2018) % Housing Units: Occupied
+14,CYB26VV01,0.034934536585086474,Basic Variables Current Year Estimates A (2018) Average (Mean) Household Size
+15,XCYA12V009,0.034039144023788506,Basic Variables Current Year Estimates A (2018)  By Percent Marital Status (Pop 15 Plus) Male % Never Married
+16,Business_Sector_3,0.0337391578702237,
+17,CYEC17V001,0.03306458805856195,Basic Variables Current Year Estimates A (2018) Income Household Median Household Income
+18,Sports_Events_-_Listen_1,0.03301818298771424,
+19,Income_Race_and_Ethnicity_1,0.03199151775271089,
+20,Dining_1,0.03130637679525951,
+21,XCYMALE,0.024706684435562468,Basic Variables Current Year Estimates A (2018) Gender % Male Population
+22,XCYFEM,0.02435067492019652,Basic Variables Current Year Estimates A (2018) Gender % Female Population 
