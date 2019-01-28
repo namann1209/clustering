@@ -1,0 +1,66 @@
+------------------------------------------------------------------------------------------------------------------
+V1
+fav_brand = ['bdl', 'bud', 'chl', 'mul', 'sta', 'nti', 'bll', 'mgl', 'gpx', 'est', 'idb', 'hgh', 'kcm', 'rck']
+fav_probab = 0.8
+non_fav_prob = 0.4
+ 
+Execution Sparsity index :
+Avg. sparsity on history data (60 months)	0.56
+Avg.  sparsity on Recommended data (next 15 months)	0.27
+Avg.  sparsity on Recommended data (next 15 months)	0.25
+Avg.  sparsity on Recommended data (next 15 months)	0.19
+Avg.  sparsity on Recommended data (next 15 months)	0.19
+ 
+------------------------------------------------------------------------------------------------------------------
+V2
+fav_brand = ['abn', 'bud', 'chl', 'bhl', 'bws', 'nti', 'ntd', 'mgl', 'gpx', 'est', 'bkx', 'hgh', 'idb', 'rck']
+fav_probab = 0.75
+non_fav_prob = 0.5
+ 
+Execution Sparsity index :
+Avg. sparsity on history data (60 months)	0.53
+Avg.  sparsity on Recommended data (next 15 months)	0.25
+Avg.  sparsity on Recommended data (next 15 months)	0.27
+Avg.  sparsity on Recommended data (next 15 months)	0.26
+Avg.  sparsity on Recommended data (next 15 months)	0.22
+ 
+------------------------------------------------------------------------------------------------------------------
+V3
+fav_brand = ['bdl', 'bud', 'bla', 'bhl', 'bws', 'bll', 'blp', 'blr', 'bly', 'bsf', 'bkx', 'bsh', 'idb', 'ibh']
+fav_probab = 0.9
+non_fav_prob = 0.6
+ 
+Execution Sparsity index :
+Avg. sparsity on history data (60 months)	0.51
+Avg.  sparsity on Recommended data (next 15 months)	0.10
+Avg.  sparsity on Recommended data (next 15 months)	0.09
+Avg.  sparsity on Recommended data (next 15 months)	0.07
+Avg.  sparsity on Recommended data (next 15 months)	0.15
+ 
+------------------------------------------------------------------------------------------------------------------
+V4
+fav_brand = ['abn', 'chl', 'est', 'gpx', 'hgh', 'kcm', 'mgl', 'mul', 'ntd', 'nti', 'rck', 'sam', 'sta', 'swa']
+fav_probab = 0.99
+non_fav_prob = 0.05
+ 
+Execution Sparsity index :
+Avg. sparsity on history data (60 months)	0.45
+Avg.  sparsity on Recommended data (next 15 months)	0.02
+Avg.  sparsity on Recommended data (next 15 months)	0.01
+Avg.  sparsity on Recommended data (next 15 months)	0.00
+Avg.  sparsity on Recommended data (next 15 months)	0.02
+ 
+------------------------------------------------------------------------------------------------------------------
+V5 
+fav_brand = ['abn', 'bud', 'est', 'bhl', 'hgh', 'bll', 'mgl', 'blr', 'ntd', 'bsf', 'rck', 'bsh', 'sta', 'ibh']
+fav_probab = 0.6
+non_fav_prob = 0.6
+ 
+Execution Sparsity index :
+Avg. sparsity on history data (60 months)	0.49
+Avg.  sparsity on Recommended data (next 15 months)	0.40
+Avg.  sparsity on Recommended data (next 15 months)	0.38
+Avg.  sparsity on Recommended data (next 15 months)	0.39
+Avg.  sparsity on Recommended data (next 15 months)	0.38
+ 
+------------------------------------------------------------------------------------------------------------------
